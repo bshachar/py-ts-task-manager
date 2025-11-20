@@ -1,26 +1,26 @@
-
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-900">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kanban Task Manager</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'slate': {
-                750: '#2d3748',
-                850: '#1a202c',
-              }
+<html lang="he" dir="rtl" class="h-full bg-slate-900">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>המשימות שלי</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'slate': {
+              750: '#2d3748',
+              850: '#1a202c',
             }
           }
         }
       }
-    </script>
+    }
+  </script>
   <script type="importmap">
 {
   "imports": {
@@ -31,8 +31,10 @@
 }
 </script>
 </head>
-  <body class="h-full">
-    <div id="root" class="h-full"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+
+<body class="h-full">
+  <div id="root" class="h-full"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>

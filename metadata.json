@@ -1,5 +1,5 @@
 {
-  "name": "Linear-Style Kanban Task Manager",
+  "name": "Kanban Task Manager",
   "description": "A sleek, modern task management application with a Kanban board and list view, inspired by the UI/UX of Linear. It allows users to add, update, and delete tasks to streamline their workflow.",
   "requestFramePermissions": []
 }

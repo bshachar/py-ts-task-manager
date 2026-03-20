@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect, Fragment } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { Task, Status, Priority } from '../types';
 
 interface TaskModalProps {
@@ -13,8 +15,9 @@ interface TaskModalProps {
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, onDelete }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<string>(Status.Backlog);
-  const [priority, setPriority] = useState<string>(Priority.NoPriority);
+  const [status, setStatus] = useState<Status>(Status.Backlog);
+  const [priority, setPriority] = useState<Priority>(Priority.NoPriority);
+  const [dueDate, setDueDate] = useState<Date | null>(null);
 
   useEffect(() => {
     if (task) {
@@ -22,11 +25,13 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, on
       setDescription(task.description);
       setStatus(task.status);
       setPriority(task.priority);
+      setDueDate(task.dueDate ? new Date(task.dueDate) : null);
     } else {
       setTitle('');
       setDescription('');
       setStatus(Status.Todo);
       setPriority(Priority.NoPriority);
+      setDueDate(null);
     }
   }, [task, isOpen]);
 
@@ -38,6 +43,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, on
       description,
       status,
       priority,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
     };
     onSave(savedTask);
   };
@@ -45,16 +51,16 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, on
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70" onClick={onClose}>
-      <div className="bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-6 border border-slate-700" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4" onClick={onClose}>
+      <div className="bg-slate-800 rounded-lg shadow-xl w-full max-w-lg p-4 sm:p-6 border border-slate-700 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">{task ? 'ערוך משימה' : 'הוסף משימה חדשה'}</h2>
+          <h2 className="text-xl font-bold text-white">{task ? 'Edit Task' : 'Add New Task'}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">&times;</button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-400 mb-1">כותרת</label>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-400 mb-1">Title</label>
             <input
               type="text"
               id="title"
@@ -64,7 +70,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, on
             />
           </div>
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-400 mb-1">תיאור</label>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-400 mb-1">Description</label>
             <textarea
               id="description"
               rows={4}
@@ -75,59 +81,67 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, on
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-400 mb-1">סטטוס</label>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-400 mb-1">Status</label>
               <select
                 id="status"
                 value={status}
-                onChange={e => setStatus(e.target.value)}
+                onChange={e => setStatus(e.target.value as Status)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               >
                 {Object.values(Status).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="priority" className="block text-sm font-medium text-gray-400 mb-1">עדיפות</label>
+              <label htmlFor="priority" className="block text-sm font-medium text-gray-400 mb-1">Priority</label>
               <select
                 id="priority"
                 value={priority}
-                onChange={e => setPriority(e.target.value)}
+                onChange={e => setPriority(e.target.value as Priority)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               >
                 {Object.values(Priority).map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
+            <div className="col-span-2">
+              <label htmlFor="dueDate" className="block text-sm font-medium text-gray-400 mb-1">Due Date</label>
+              <DatePicker
+                id="dueDate"
+                selected={dueDate}
+                onChange={(date: Date | null) => setDueDate(date)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                placeholderText="Select a due date"
+                dateFormat="yyyy-MM-dd"
+                isClearable
+              />
+            </div>
           </div>
         </div>
 
         <div className="mt-6 flex justify-between items-center">
-          <div>
-            {task && (
-              <button
-                onClick={() => {
-                  if (window.confirm(`האם אתה בטוח שברצונך למחוק את "${task.title}"?`)) {
-                    onDelete(task.id);
-                  }
-                }}
-                className="px-4 py-2 text-sm font-medium text-red-400 rounded-md hover:bg-red-500 hover:text-white transition-colors"
-              >
-                מחק משימה
-              </button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-300 bg-slate-700 rounded-md hover:bg-slate-600 transition-colors"
-            >
-              ביטול
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 transition-colors"
-            >
-              {task ? 'שמור שינויים' : 'צור משימה'}
-            </button>
-          </div>
+            <div>
+                {task && (
+                    <button
+                        onClick={() => onDelete(task.id)}
+                        className="px-4 py-2 text-sm font-medium text-red-400 rounded-md hover:bg-red-500 hover:text-white transition-colors"
+                    >
+                        Delete Task
+                    </button>
+                )}
+            </div>
+            <div className="flex gap-2">
+                <button
+                    onClick={onClose}
+                    className="px-4 py-2 text-sm font-medium text-gray-300 bg-slate-700 rounded-md hover:bg-slate-600 transition-colors"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={handleSave}
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 transition-colors"
+                >
+                    {task ? 'Save Changes' : 'Create Task'}
+                </button>
+            </div>
         </div>
       </div>
     </div>

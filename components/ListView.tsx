@@ -1,7 +1,11 @@
 
-import React, { useState } from 'react';
-import { Task } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Task, Priority, Status } from '../types';
 import TaskRow from './TaskRow';
+import { Icon, ChevronUpIcon, ChevronDownIcon } from './Icon';
+
+type SortField = 'title' | 'createdAt' | 'priority' | 'status' | 'dueDate';
+type SortDirection = 'asc' | 'desc';
 
 interface ListViewProps {
   tasks: Task[];
@@ -9,8 +13,20 @@ interface ListViewProps {
   onDeleteTask: (taskId: string) => void;
 }
 
-type SortField = 'title' | 'status' | 'priority' | 'createdAt';
-type SortDirection = 'asc' | 'desc';
+const priorityOrder: Record<Priority, number> = {
+  [Priority.Urgent]: 5,
+  [Priority.High]: 4,
+  [Priority.Medium]: 3,
+  [Priority.Low]: 2,
+  [Priority.NoPriority]: 1,
+};
+
+const statusOrder: Record<Status, number> = {
+  [Status.Backlog]: 1,
+  [Status.Todo]: 2,
+  [Status.InProgress]: 3,
+  [Status.Done]: 4,
+};
 
 const ListView: React.FC<ListViewProps> = ({ tasks, onEditTask, onDeleteTask }) => {
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -25,66 +41,83 @@ const ListView: React.FC<ListViewProps> = ({ tasks, onEditTask, onDeleteTask }) 
     }
   };
 
-  const sortedTasks = [...tasks].sort((a, b) => {
-    let aValue: any = a[sortField];
-    let bValue: any = b[sortField];
+  const sortedTasks = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      let comparison = 0;
+      if (sortField === 'title') {
+        comparison = a.title.localeCompare(b.title);
+      } else if (sortField === 'createdAt') {
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortField === 'priority') {
+        comparison = priorityOrder[a.priority] - priorityOrder[b.priority];
+      } else if (sortField === 'status') {
+        comparison = statusOrder[a.status] - statusOrder[b.status];
+      } else if (sortField === 'dueDate') {
+        const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        comparison = dateA - dateB;
+      }
 
-    // For date sorting
-    if (sortField === 'createdAt') {
-      aValue = new Date(aValue).getTime();
-      bValue = new Date(bValue).getTime();
-    }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [tasks, sortField, sortDirection]);
 
-    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return <span className="text-gray-600">⇅</span>;
-    return <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) return null;
+    return (
+      <Icon 
+        svg={sortDirection === 'asc' ? ChevronUpIcon : ChevronDownIcon} 
+        className="w-4 h-4 inline-block ml-1" 
+      />
+    );
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto" dir="rtl">
+    <div className="w-full h-full overflow-y-auto">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-slate-800 rounded-lg border border-slate-700">
-          <table className="w-full text-right">
+        <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-x-auto">
+          <table className="w-full text-left min-w-[800px]">
             <thead className="border-b border-slate-700">
               <tr>
-                <th
-                  className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-200 transition-colors"
+                <th 
+                  className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-200 select-none w-1/3"
                   onClick={() => handleSort('title')}
                 >
-                  <div className="flex items-center justify-start gap-2">
-                    כותרת <SortIcon field="title" />
-                  </div>
+                  Title {renderSortIcon('title')}
                 </th>
-                <th
-                  className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-200 transition-colors"
+                <th 
+                  className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-200 select-none"
                   onClick={() => handleSort('status')}
                 >
-                  <div className="flex items-center justify-start gap-2">
-                    סטטוס <SortIcon field="status" />
-                  </div>
+                  Status {renderSortIcon('status')}
                 </th>
-                <th
-                  className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-200 transition-colors"
+                <th 
+                  className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-200 select-none"
                   onClick={() => handleSort('priority')}
                 >
-                  <div className="flex items-center justify-start gap-2">
-                    עדיפות <SortIcon field="priority" />
-                  </div>
+                  Priority {renderSortIcon('priority')}
                 </th>
-                <th className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">פעולות</th>
+                <th 
+                  className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-200 select-none"
+                  onClick={() => handleSort('dueDate')}
+                >
+                  Due Date {renderSortIcon('dueDate')}
+                </th>
+                <th 
+                  className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-200 select-none"
+                  onClick={() => handleSort('createdAt')}
+                >
+                  Created {renderSortIcon('createdAt')}
+                </th>
+                <th className="px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody>
               {sortedTasks.map((task, index) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onEditTask={onEditTask}
+                <TaskRow 
+                  key={task.id} 
+                  task={task} 
+                  onEditTask={onEditTask} 
                   onDeleteTask={onDeleteTask}
                   isLast={index === sortedTasks.length - 1}
                 />

@@ -19,7 +19,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onEditTask, updateTask
   };
 
   return (
-    <div className="flex h-full gap-6">
+    <div className="flex h-full gap-4 overflow-x-auto pb-2">
       {KANBAN_COLUMNS.map(column => (
         <KanbanColumn
           key={column.title}

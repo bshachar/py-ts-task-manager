@@ -1,31 +1,85 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Header from './components/Header';
 import KanbanBoard from './components/KanbanBoard';
 import ListView from './components/ListView';
 import TaskModal from './components/TaskModal';
-import Auth from './components/Auth';
+import LoginPage from './components/LoginPage';
 import { useTasks } from './hooks/useTasks';
-import { Task } from './types';
-import { useAuth } from './context/AuthContext';
+import { Task, Status, Priority } from './types';
 
 export type ViewMode = 'board' | 'list';
 
 function App() {
-  const { isAuthenticated, loading: authLoading, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
-  const { tasks, addTask, updateTask, deleteTask, loading: tasksLoading } = useTasks(searchQuery);
+  const [isConnected, setIsConnected] = useState(false);
+  const { tasks, loading, addTask, updateTask, deleteTask, refreshTasks } = useTasks(isConnected);
   const [viewMode, setViewMode] = useState<ViewMode>('board');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  
+  const [statusFilter, setStatusFilter] = useState<Status | 'All'>('All');
+  const [priorityFilter, setPriorityFilter] = useState<Priority | 'All'>('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  if (authLoading) {
-    return <div className="flex items-center justify-center h-screen bg-slate-900 text-white">טוען...</div>;
-  }
+  useEffect(() => {
+    // Check initial auth status
+    fetch('/api/auth/status')
+      .then(res => res.json())
+      .then(data => setIsConnected(data.connected))
+      .catch(console.error);
 
-  if (!isAuthenticated) {
-    return <Auth />;
-  }
+    // Listen for OAuth popup success
+    const handleMessage = (event: MessageEvent) => {
+      const origin = event.origin;
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
+        return;
+      }
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        setIsConnected(true);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleConnectGoogle = async () => {
+    try {
+      const response = await fetch('/api/auth/url');
+      if (!response.ok) throw new Error('Failed to get auth URL');
+      const { url } = await response.json();
+
+      const authWindow = window.open(url, 'oauth_popup', 'width=600,height=700');
+      if (!authWindow) {
+        alert('Please allow popups for this site to connect your Google account.');
+      }
+    } catch (error) {
+      console.error('OAuth error:', error);
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setIsConnected(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (statusFilter !== 'All' && task.status !== statusFilter) return false;
+      if (priorityFilter !== 'All' && task.priority !== priorityFilter) return false;
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase();
+        if (!task.title.toLowerCase().includes(query) && 
+            !task.description.toLowerCase().includes(query)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [tasks, statusFilter, priorityFilter, searchQuery]);
 
   const handleOpenModal = (task: Task | null = null) => {
     setEditingTask(task);
@@ -51,49 +105,36 @@ function App() {
     handleCloseModal();
   }
 
+  if (!isConnected) {
+    return <LoginPage onConnectGoogle={handleConnectGoogle} />;
+  }
+
   return (
     <div className="flex flex-col h-full bg-slate-900 text-gray-200 font-sans antialiased">
       <Header
         viewMode={viewMode}
         onViewChange={setViewMode}
         onAddTask={() => handleOpenModal()}
-        onLogout={logout}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        priorityFilter={priorityFilter}
+        setPriorityFilter={setPriorityFilter}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isConnected={isConnected}
+        onConnectGoogle={handleConnectGoogle}
+        onDisconnectGoogle={handleDisconnectGoogle}
       />
-      <div className="px-4 sm:px-6 lg:px-8 pt-4">
-        <div className="max-w-md mx-auto">
-          <div className="relative" dir="rtl">
-            <input
-              type="text"
-              placeholder="חיפוש משימות..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 pr-10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-            <svg
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+      <main className="flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6 lg:p-8 relative">
+        {loading && (
+          <div className="absolute inset-0 bg-slate-900/50 flex items-center justify-center z-10">
+            <div className="text-indigo-400 font-medium">Loading tasks...</div>
           </div>
-        </div>
-      </div>
-      <main className="flex-1 overflow-x-auto overflow-y-hidden p-4 sm:p-6 lg:p-8">
-        {tasksLoading ? (
-          <div className="flex items-center justify-center h-full text-slate-500">טוען משימות...</div>
+        )}
+        {viewMode === 'board' ? (
+          <KanbanBoard tasks={filteredTasks} onEditTask={handleOpenModal} updateTask={updateTask} />
         ) : (
-          viewMode === 'board' ? (
-            <KanbanBoard tasks={tasks} onEditTask={handleOpenModal} updateTask={updateTask} />
-          ) : (
-            <ListView tasks={tasks} onEditTask={handleOpenModal} onDeleteTask={deleteTask} />
-          )
+          <ListView tasks={filteredTasks} onEditTask={handleOpenModal} onDeleteTask={deleteTask} />
         )}
       </main>
       {isModalOpen && (

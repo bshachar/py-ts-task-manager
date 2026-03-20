@@ -1,24 +1,25 @@
 
 export enum Status {
-  Backlog = 'צבר עבודות',
-  Todo = 'לביצוע',
-  InProgress = 'בביצוע',
-  Done = 'הושלם',
+  Backlog = 'Backlog',
+  Todo = 'To Do',
+  InProgress = 'In Progress',
+  Done = 'Done',
 }
 
 export enum Priority {
-  NoPriority = 'ללא עדיפות',
-  Low = 'נמוכה',
-  Medium = 'בינונית',
-  High = 'גבוהה',
-  Urgent = 'דחוף',
+  NoPriority = 'No Priority',
+  Low = 'Low',
+  Medium = 'Medium',
+  High = 'High',
+  Urgent = 'Urgent',
 }
 
 export interface Task {
   id: string;
   title: string;
   description: string;
-  status: string;  // Changed to string to accept Hebrew values from backend
-  priority: string;  // Changed to string to accept Hebrew values from backend
+  status: Status;
+  priority: Priority;
   createdAt: string;
+  dueDate?: string;
 }

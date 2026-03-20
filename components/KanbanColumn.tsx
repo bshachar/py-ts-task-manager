@@ -34,7 +34,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ title, color, tasks, onEdit
 
   return (
     <div
-      className={`flex flex-col flex-1 min-w-[280px] h-full rounded-lg transition-colors duration-200 ${isDraggedOver ? 'bg-slate-850' : ''}`}
+      className={`flex flex-col flex-1 min-w-[220px] max-w-[320px] h-full rounded-lg transition-colors duration-200 ${isDraggedOver ? 'bg-slate-850' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

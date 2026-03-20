@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-sqlalchemy
-pydantic
-python-jose[cryptography]
-passlib[argon2]
-python-multipart
-requests
-argon2-cffi

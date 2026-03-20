@@ -73,7 +73,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task, on
             <label htmlFor="description" className="block text-sm font-medium text-gray-400 mb-1">Description</label>
             <textarea
               id="description"
-              rows={4}
+              style={{ height: '80px' }}
               value={description}
               onChange={e => setDescription(e.target.value)}
               className="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
